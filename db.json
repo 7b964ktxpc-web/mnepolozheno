@@ -1,1 +1,20 @@
-{"version":"2026.09.13-nso-09","checked":"13.09.2026","region":"Новосибирская область","sources":[{"name":"СФР — Новосибирская область","url":"https://sfr.gov.ru/branches/novosibirsk/"},{"name":"СФР — единое пособие","url":"https://sfr.gov.ru/grazhdanam/semyam_s_detmi/edinoe_posobie/"},{"name":"Минтруд НСО","url":"https://nszn.nso.ru/ER/News"},{"name":"Минтруд НСО — социальный контракт","url":"https://nszn.nso.ru/EE/News/NewsCard/670"}],"rules":{"pm":18560,"childPm":18003,"workingPm":20230,"mrot":27093,"minAnnual":216744,"annualFamilyPm":26067,"birth":34140.53,"childCareNonworking":12803.58,"unemploymentMin":2236,"unemploymentMax":19063,"socialContractWork":20230,"socialContractBusiness":350000,"avgSalary2024":76770.3},"changes":[]}
+{
+  "version": "2026.09.13-nso-10",
+  "checked": "13.09.2026",
+  "region": "Новосибирская область",
+  "sources": [
+    {"name":"СФР — Новосибирская область","url":"https://sfr.gov.ru/branches/novosibirsk/"},
+    {"name":"СФР — единое пособие","url":"https://sfr.gov.ru/grazhdanam/semyam_s_detmi/edinoe_posobie/"},
+    {"name":"Минтруд НСО","url":"https://nszn.nso.ru/ER/News"},
+    {"name":"Минтруд НСО — социальный контракт","url":"https://nszn.nso.ru/EE/News/NewsCard/670"}
+  ],
+  "rules":{"pm":18560,"childPm":18003,"workingPm":20230,"mrot":27093,"minAnnual":216744,"annualFamilyPm":26067,"birth":34140.53,"childCareNonworking":12803.58,"unemploymentMin":2236,"unemploymentMax":19063,"socialContractWork":20230,"socialContractBusiness":350000,"avgSalary2024":76770.3},
+  "changes":[
+    {"date":"13.09.2026","title":"Улучшен персональный разбор ситуации","text":"Добавлено более устойчивое распознавание состава семьи, возраста детей, доходов, работы, алиментов и отдельных жизненных обстоятельств."},
+    {"date":"13.09.2026","title":"Добавлена карточка «Я понял вас так»","text":"Перед расчётом пользователь видит распознанный профиль и может исправить данные."},
+    {"date":"11.09.2026","title":"Больничные для самозанятых","text":"СФР НСО сообщает о выплатах участникам добровольного страхования при соблюдении условий программы.","source":"https://sfr.gov.ru/branches/novosibirsk/news/~2026/09/11/284651"},
+    {"date":"22.07.2026","title":"Обновлены правила единого пособия","text":"Уточнены объективные причины отсутствия дохода и проверка проживания.","source":"https://sfr.gov.ru/branches/novosibirsk/news~2026/07/22/283080"},
+    {"date":"05.03.2026","title":"Новые правила учёта алиментов","text":"При отсутствии судебного решения действует расчёт от среднемесячной номинальной зарплаты региона.","source":"https://sfr.gov.ru/branches/novosibirsk/news~2026/03/05/279400"},
+    {"date":"17.03.2026","title":"Специальное правило 10% для многодетных","text":"Механизм касается продления единого пособия в 2026 году при превышении дохода не более чем на 10%.","source":"https://sfr.gov.ru/branches/novosibirsk/news~2026/03/17/279656"}
+  ]
+}
