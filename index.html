@@ -115,8 +115,14 @@ function chatGemini(msg){
   }).catch(()=>{bubble.innerHTML='<b>МНЕ ПОЛОЖЕНО 🤖</b><div>Ошибка связи с ИИ-помощником.</div>';});
 }
 function setupGemini(){
-  const key=prompt('Вставьте ваш Gemini API ключ (AIza…):');
-  if(key&&key.length>10){localStorage.setItem('mne_gemini_key',key);toast('ИИ ключ сохранён');render();}
+  let cur=localStorage.getItem('mne_gemini_key')||'';
+  let html=`<div style="padding:16px"><p style="margin:0 0 10px">Вставьте ваш Gemini API ключ (начинается с <b>AIza</b>):</p><textarea id="geminiKeyInput" style="width:100%;min-height:60px;font-family:monospace;font-size:13px">${esc(cur)}</textarea><div class="actions" style="margin-top:12px"><button class="primary" onclick="saveGeminiKey()">Сохранить</button><button class="secondary" onclick="nav('chat')">Отмена</button></div></div>`;
+  const panel=document.querySelector('.chatPanel');
+  if(panel){panel.insertAdjacentHTML('beforeend',`<div id="geminiSetup" class="card" style="margin-top:12px">${html}</div>`);document.getElementById('geminiKeyInput').focus()}
+}
+async function saveGeminiKey(){
+  const key=document.getElementById('geminiKeyInput')?.value?.trim();
+  if(key&&key.length>10){localStorage.setItem('mne_gemini_key',key);let el=document.getElementById('geminiSetup');if(el)el.remove();toast('ИИ ключ сохранён');render()}
 }
 function askGemini(){
   const key=getGeminiKey(); if(!key){toast('Сначала настройте ИИ ключ');return;}
