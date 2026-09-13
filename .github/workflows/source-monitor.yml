@@ -1,0 +1,90 @@
+name: Source Monitor
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read db.json
+        id: db
+        run: |
+          VERSION=$(jq -r '.version' db.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          URLS=$(jq -r '.sources[].url' db.json)
+          echo "urls=$(echo "$URLS" | base64 -w0)" >> $GITHUB_OUTPUT
+
+      - name: Ensure cache directory
+        run: mkdir -p .github/sources-cache
+
+      - name: Check each source
+        id: changes
+        env:
+          ALL_URLS: ${{ steps.db.outputs.urls }}
+        run: |
+          CHANGED=0
+          DECODED=$(echo "$ALL_URLS" | base64 -d)
+          while IFS= read -r URL; do
+            [ -z "$URL" ] && continue
+            FNAME=$(echo -n "$URL" | sha256sum | awk '{print $1}')
+            CACHE_FILE=".github/sources-cache/${FNAME}.sha256"
+            NEW_HASH=$(curl -sL --max-time 30 "$URL" | sha256sum | awk '{print $1}')
+            if [ -z "$NEW_HASH" ]; then
+              echo "⚠️ Could not fetch: $URL" >> $GITHUB_STEP_SUMMARY
+              continue
+            fi
+            OLD_HASH=""
+            if [ -f "$CACHE_FILE" ]; then
+              OLD_HASH=$(cat "$CACHE_FILE")
+            fi
+            if [ "$OLD_HASH" != "$NEW_HASH" ]; then
+              echo "$NEW_HASH" > "$CACHE_FILE"
+              CHANGED=1
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "::notice::Source changed: $URL"
+            fi
+          done <<< "$DECODED"
+          if [ "$CHANGED" = "0" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue if changed
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const cacheDir = '.github/sources-cache';
+            const files = fs.readdirSync(cacheDir);
+            let body = 'Проверка источников выявила изменения:\n\n';
+            for (const f of files) {
+              const sha = fs.readFileSync(path.join(cacheDir, f), 'utf8').trim();
+              body += `- **${f}**: ${sha}\n`;
+            }
+            body += '\nДата проверки: ' + new Date().toISOString();
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '[Мониторинг] Изменения на источниках — ' + new Date().toISOString().slice(0,10),
+              body: body,
+              labels: ['monitoring', 'sources']
+            });
+
+      - name: Commit cache files
+        if: steps.changes.outputs.changed == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update source monitor cache"
+          file_pattern: ".github/sources-cache/*.sha256"
