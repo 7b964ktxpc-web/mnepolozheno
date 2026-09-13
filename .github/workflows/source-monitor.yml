@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
   actions: read
 
@@ -88,8 +88,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/sources-cache/
-          echo "--- git status ---"
-          git status --porcelain
           if [ -n "$(git status --porcelain)" ]; then
             git commit -m "chore: update source monitor cache"
             git push origin ${{ github.ref }}
