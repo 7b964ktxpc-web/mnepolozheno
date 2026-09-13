@@ -3,6 +3,7 @@
 .chatbox{display:flex;flex-direction:column;gap:10px;max-height:460px;overflow:auto;margin:14px 0}.bubble{padding:12px 14px;border:1px solid #e5e7eb;border-radius:16px;max-width:88%;line-height:1.45}.bubble.ai{align-self:flex-start;background:#f6f8fb}.bubble.user{align-self:flex-end;background:#eef6ff}.bubble b{font-size:12px;display:block;margin-bottom:4px}.chatPanel .textarea{min-height:90px}</style></head><body><main class="app"><div class="top"><div class="brand">МНЕ <span>ПОЛОЖЕНО</span></div><div class="badge">Новосибирская область · 2026</div></div><div class="nav" id="nav"></div><div id="app"></div><div class="footer">Предварительный правовой навигатор. Правила обновляются по официальным источникам; решение о назначении принимает соответствующий государственный орган.</div></main><script>
 const DB={version:'2026.09.13-nso-27',checked:'13.09.2026',region:'Новосибирская область',changes:[{date:'13.09.2026',title:'Автоматический контроль дедлайнов',text:'Центр решения и кабинет показывают оставшееся время до практической крайней даты подачи ежегодной семейной выплаты — 30 сентября 2026 года.'},{date:'11.09.2026',title:'Больничные для самозанятых',text:'СФР НСО сообщает о новой мере для участников добровольного страхования.',source:'https://sfr.gov.ru/branches/novosibirsk/news/~2026/09/11/284651'},{date:'08.09.2026',title:'Ускорено распоряжение маткапиталом',text:'СФР НСО сообщил об ускорении основной части решений по заявлениям о распоряжении маткапиталом.',source:'https://sfr.gov.ru/branches/novosibirsk/news/~2026/09/08/284545'}],sources:[{name:'СФР — единое пособие',url:'https://sfr.gov.ru/grazhdanam/semyam_s_detmi/edinoe_posobie/'},{name:'СФР — Новосибирская область',url:'https://sfr.gov.ru/branches/novosibirsk/'},{name:'Минтруд НСО — семьи с детьми',url:'https://mtsr.nso.ru/page/2134'},{name:'ЦСПН НСО — выплаты и пособия',url:'https://cspn.nso.ru/page/1637'},{name:'Минтруд НСО — новости и изменения',url:'https://nszn.nso.ru/ER/News'},{name:'Минтруд НСО — социальный контракт',url:'https://nszn.nso.ru/EE/News/NewsCard/670'}],rules:{pm:18560,childPm:18003,workingPm:20230,mrot:27093,minAnnual:216744,annualFamilyPm:26067,avgSalary2025:88683.70,avgSalary2024:76770.30,birth:34140.54,childCareNonworking:12803.57,unemploymentMin:2236,unemploymentMax:19063,socialContractWork:20230,socialContractBusiness:350000}};
 const DB_OVERRIDE=JSON.parse(localStorage.getItem('mne_db_override')||'null'); if(DB_OVERRIDE){Object.assign(DB,DB_OVERRIDE); DB.rules=Object.assign({},DB.rules,DB_OVERRIDE.rules||{});} let REMOTE_DB=null;
+const GEMINI_API_KEY='AI-Ab8RN6JgtTlhHrzeVtdPecfmXgLtqe0vMCz6SbuQpLj0qFrwlQ';
 async function syncRemoteDB(){try{const r=await fetch('./db.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;const x=await r.json();if(x.version && x.checked && x.rules && (!DB.version || x.version>DB.version)){REMOTE_DB=x; Object.assign(DB,x); DB.rules=Object.assign({},x.rules); save(); render();}}catch(e){}}
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 syncRemoteDB();
@@ -35,6 +36,44 @@ function navHtml(){let items=[['home','Главная'],['navigator','🧭 Мо�
 function home(){return `<section class="hero"><h1>Не ищи пособия.<br>Расскажи ситуацию.</h1><p>Я соберу семью, доходы и обстоятельства, проверю основные правила и покажу, что стоит проверить дальше.</p><div class="chips"><button class="chip" onclick="example('Я мама, двое детей 2 и 7 лет, доход семьи 45 000 рублей в месяц')">👩 Мама + дети</button><button class="chip" onclick="example('У меня трое детей, я работаю, доход 70 000 рублей')">👨‍👩‍👧‍👦 Многодетная</button><button class="chip" onclick="example('Я не работаю, ребёнку 2 года')">🏠 Не работаю</button></div><textarea class="textarea" id="q" placeholder="Например: я мама, ребёнку 2 года, муж работает, доход 70 000…">${S.text}</textarea><div class="actions"><button class="primary" onclick="startCheck()">Проверить, что мне положено →</button><button class="secondary" onclick="startChat()">🤖 Пройти проверку диалогом</button><button class="secondary" onclick="nav('navigator')">🧭 Мой маршрут</button><button class="secondary" onclick="nav('profile')">Заполнить профиль</button><button class="secondary" onclick="nav('updates')">Что изменилось сегодня</button></div></section><section class="panel"><div class="row"><h2>Что умеет сервис</h2><span class="status new">База ${DB.checked} · v39</span></div><div class="cards"><div class="card"><h3>🧮 Считает</h3><p class="muted">Среднедушевой доход, годовой доход и пороги.</p></div><div class="card"><h3>⚖️ Проверяет правила</h3><p class="muted">В том числе минимальный доход и объективные причины.</p></div><div class="card"><h3>🔎 Ищет варианты</h3><p class="muted">Федеральные и региональные меры поддержки.</p></div><div class="card"><h3>🛡️ Разбирает отказ</h3><p class="muted">Показывает, что именно стоит перепроверить и обжаловать.</p></div></div></section>`}
 function example(t){S.text=t;parseText(t);nav('audit')}
 function startCheck(){S.text=document.getElementById('q').value.trim();parseText(S.text);nav('audit')}
+async function callGemini(userMsg){
+  const profile={adults:S.adults,children:S.children,childAges:S.childAges,income:S.income,annualFamilyIncome:S.annualFamilyIncome,workingAdults:S.workingAdults,russianCitizenship:S.russianCitizenship,permanentResidence:S.permanentResidence,apartments:S.apartments,houses:S.houses,cars:S.cars,motos:S.motos,landHa:S.landHa,reason:S.reason,region:DB.region,rules:DB.rules,checked:DB.checked,version:DB.version};
+  const history=(S.chatMessages||[]).slice(-10).map(m=>`${m.role==='user'?'Пользователь':'Бот'}: ${m.text}`).join('\n');
+  const prompt=`Ты — помощник по государственным выплатам и мерам социальной поддержки в Новосибирской области, Россия, 2026 год. Отвечай на русском языке, понятно и по делу.
+
+Профиль пользователя:
+- Взрослых: ${profile.adults}
+- Детей: ${profile.children}${profile.childAges&&profile.childAges.length?' (возраст: '+profile.childAges.join(', ')+' лет)':''}
+- Доход семьи в месяц: ${money(profile.income||0)} ₽
+- Доход семьи за год: ${money(profile.annualFamilyIncome||0)} ₽
+- Работающих взрослых: ${profile.workingAdults}
+- Гражданство РФ: ${profile.russianCitizenship===true?'Да':profile.russianCitizenship===false?'Нет':'Уточняется'}
+- Постоянное проживание в РФ: ${profile.permanentResidence===true?'Да':profile.permanentResidence===false?'Нет':'Уточняется'}
+- Недвижимость: квартир ${profile.apartments||0}, домов ${profile.houses||0}
+- Транспорт: авто ${profile.cars||0}, мотоциклов ${profile.motos||0}
+- Земля: ${profile.landHa||0} га
+- Причина отсутствия дохода: ${profile.reason||'не указана'}
+- Регион: ${profile.region}
+- Базовые правила (версия ${profile.version}, проверено ${profile.checked}): ПМ=${money(profile.rules.pm)} ₽, ребёнок=${money(profile.rules.childPm)} ₽, работающий=${money(profile.rules.workingPm)} ₽, МРОТ=${money(profile.rules.mrot)} ₽, мин. годовой=${money(profile.rules.minAnnual)} ₽, годовая семья=${money(profile.rules.annualFamilyPm)} ₽, средняя зарплата 2025=${money(profile.rules.avgSalary2025)} ₽
+
+История диалога:
+${history||'(начало диалога)'}
+
+Вопрос пользователя: ${userMsg}
+
+Ответь:
+1. Перечисли, какие меры поддержки могут быть доступны по профилю (единое пособие, ежемесячное пособие, ежегодная семейная выплата, социальный контракт, больничные для самозанятых и т.д.)
+2. Какие документы и сведения нужно подготовить
+3. Куда и как подавать заявления
+4. Если вопрос не о выплатах — ответь кратко и по существу
+Не давай юридических гарантий — указывай, что окончательное решение принимает орган. Уточняй, если данных недостаточно.`;
+  try{
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_API_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]}));
+    if(!resp.ok)return null;
+    const data=await resp.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text||null;
+  }catch(e){return null;}
+}
 function esc(t){return String(t||'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
 function chatQuestion(){
  const missing=[];
@@ -53,17 +92,24 @@ function chat(){
  return `<section class="panel chatPanel"><div class="row"><h2>🤖 Персональный диалог</h2><span class="status new">Только нужные вопросы</span></div><p class="muted">Не нужно заполнять анкету целиком. Расскажите ситуацию обычными словами — я буду спрашивать только то, чего не хватает для проверки.</p><div class="chatbox">${msgs.length?msgs.map(m=>`<div class="bubble ${m.role==='user'?'user':'ai'}"><b>${m.role==='user'?'Вы':'МНЕ ПОЛОЖЕНО'}</b><div>${esc(m.text)}</div></div>`).join(''):`<div class="bubble ai"><b>МНЕ ПОЛОЖЕНО</b><div>Начнём. Напишите ситуацию одним сообщением — например: «Я мама, двое детей 2 и 7 лет, муж работает, доход семьи 70 000 ₽».</div></div>`}</div><div class="card"><h3>${q[0]==='done'?'✅ Всё основное собрано':'Следующий вопрос'}</h3><p class="muted">${q[1]}</p>${q[0]==='done'?`<div class="actions"><button class="primary" onclick="nav('audit')">Проверить всё →</button><button class="secondary" onclick="nav('navigator')">🧭 Построить маршрут</button><button class="secondary" onclick="nav('profile')">Открыть профиль</button></div>`:`<textarea class="textarea" id="chatInput" placeholder="Ответьте своими словами…"></textarea><div class="actions"><button class="primary" onclick="chatSend()">Ответить →</button><button class="secondary" onclick="chatQuick('да')">Да</button><button class="secondary" onclick="chatQuick('нет')">Нет</button><button class="secondary" onclick="nav('profile')">Заполнить вручную</button></div>`}</div></section>`
 }
 function chatSend(){
- const el=document.getElementById('chatInput'); const raw=(el?.value||'').trim(); if(!raw)return;
- S.chatMessages=S.chatMessages||[]; S.chatMessages.push({role:'user',text:raw});
- // Natural-language parser updates the same canonical profile used by the deterministic engine.
- parseText(raw);
- // Handle compact answers that are hard to infer from the general parser.
- const oldQ=chatQuestion()[0], x=raw.toLowerCase().replace(/ё/g,'е');
- if(oldQ==='citizenship') S.russianCitizenship=/\b(да|росси|рф|есть)\b/.test(x)?true:/\b(нет|не)\b/.test(x)?false:null;
- if(oldQ==='residence') S.permanentResidence=/\b(да|живу|проживаю)\b/.test(x)?true:/\b(нет|не)\b/.test(x)?false:null;
- if(oldQ==='work'){let n=x.match(/\d+/);if(n)S.workingAdults=+n[0];else if(/оба|двое/.test(x))S.workingAdults=Math.min(2,S.adults);else if(/никто|не работ/.test(x))S.workingAdults=0;}
- if(oldQ==='property' && /нет|никак|ничего/.test(x)){S.apartments=0;S.houses=0;S.cars=0;S.motos=0;S.landHa=0;}
- S.members=Math.max(1,(S.adults||1)+(S.children||0)); save(); render();
+  const el=document.getElementById('chatInput'); const raw=(el?.value||'').trim(); if(!raw)return;
+  S.chatMessages=S.chatMessages||[]; S.chatMessages.push({role:'user',text:raw});
+  parseText(raw);
+  const oldQ=chatQuestion()[0], x=raw.toLowerCase().replace(/ё/g,'e');
+  if(oldQ==='citizenship') S.russianCitizenship=/\b(да|росси|рф|есть)\b/.test(x)?true:/\b(нет|не)\b/.test(x)?false:null;
+  if(oldQ==='residence') S.permanentResidence=/\b(да|живу|проживаю)\b/.test(x)?true:/\b(нет|не)\b/.test(x)?false:null;
+  if(oldQ==='work'){let n=x.match(/\d+/);if(n)S.workingAdults=+n[0];else if(/оба|двое/.test(x))S.workingAdults=Math.min(2,S.adults);else if(/никто|не работ/.test(x))S.workingAdults=0;}
+  if(oldQ==='property' && /нет|никак|ничего/.test(x)){S.apartments=0;S.houses=0;S.cars=0;S.motos=0;S.landHa=0;}
+  S.members=Math.max(1,(S.adults||1)+(S.children||0)); save(); render();
+  if(raw.length>10 && GEMINI_API_KEY){chatGemini(raw);}
+}
+function chatGemini(msg){
+  const el=document.getElementById('chatInput');
+  const bubble=document.createElement('div'); bubble.className='bubble ai'; bubble.innerHTML='<b>МНЕ ПОЛОЖЕНО 🤖</b><div>Ищу информацию…</div>';
+  const chatbox=document.querySelector('.chatbox'); if(chatbox)chatbox.appendChild(bubble);
+  callGemini(msg).then(resp=>{
+    bubble.innerHTML=resp?`<b>МНЕ ПОЛОЖЕНО 🤖</b><div>${esc(resp)}</div>`:'<b>МНЕ ПОЛОЖЕНО 🤖</b><div>Не удалось получить ответ. Попробуйте задать вопрос иначе.</div>';
+  }).catch(()=>{bubble.innerHTML='<b>МНЕ ПОЛОЖЕНО 🤖</b><div>Ошибка связи с ИИ-помощником.</div>';});
 }
 function chatQuick(v){const el=document.getElementById('chatInput');if(el){el.value=v;chatSend()}}
 function startChat(){S.chatMessages=[];S.chatStep=0;nav('chat')}
